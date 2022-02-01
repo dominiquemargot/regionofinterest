@@ -1,0 +1,391 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Region of Interest"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "All libraries successfully imported!\n",
+      "GeoPandas : 0.9.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "import os\n",
+    "import geopandas as gpd\n",
+    "from shapely.geometry import Polygon\n",
+    "from pathlib import Path\n",
+    "import matplotlib.pyplot as plt\n",
+    "from IPython.display import display\n",
+    "\n",
+    "print('All libraries successfully imported!')\n",
+    "print(f'GeoPandas : {gpd.__version__}')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Set directory"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "computer_path = '/export/miro/ndeffense/LBRAT2104/'\n",
+    "grp_letter    = 'X'\n",
+    "\n",
+    "# Directory for all work files\n",
+    "work_path = f'{computer_path}GROUP_{grp_letter}/WORK/'\n",
+    "\n",
+    "# Directory where ROI shapefile is stored\n",
+    "roi_path = f'{work_path}ROI/'\n",
+    "\n",
+    "# Create ROI path if not exists\n",
+    "Path(roi_path).mkdir(parents=True, exist_ok=True)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Choose CRS of your ROI\n",
+    "\n",
+    "Choose the same CRS as the Sentinel data.\n",
+    "\n",
+    "WGS 84 / UTM zone 31N"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "crs_dst = 'EPSG:32631'"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Give a name for the ROI shapefile\n",
+    "\n",
+    "Tip : You can include the EPSG code in the filename!"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "ROI shapefile will be stored in : /export/miro/ndeffense/LBRAT2104/GROUP_X/WORK/ROI/extent_roi_32631.shp\n"
+     ]
+    }
+   ],
+   "source": [
+    "roi_name = 'extent_roi'\n",
+    "\n",
+    "roi_filename = f'{roi_name}_{crs_dst[5:]}.shp'\n",
+    "\n",
+    "roi_file = f'{roi_path}{roi_filename}'\n",
+    "\n",
+    "print(f'ROI shapefile will be stored in : {roi_file}')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Find the coordinates of your ROI bounding box (bbox)\n",
+    "\n",
+    "To find the coordinates of a bounding box, check: http://bboxfinder.com/\n",
+    "\n",
+    "**!! Be carefull of the crs_src you chose !!**\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Upper Left X  : 627263.7\n",
+      "Upper Left Y  : 5590485.2\n",
+      "Lower Right X : 637115\n",
+      "Lower Right Y : 5596175.1\n"
+     ]
+    }
+   ],
+   "source": [
+    "crs_src = 'EPSG:32631'\n",
+    "#bbox    = [627263.7,5596175.1,637115,5590485.2]\n",
+    "bbox    = [627263.7,5590485.2,637115,5596175.1]\n",
+    "\n",
+    "ulx = bbox[0]\n",
+    "uly = bbox[1]\n",
+    "lrx = bbox[2]\n",
+    "lry = bbox[3]\n",
+    "\n",
+    "print(f'Upper Left X  : {ulx}')\n",
+    "print(f'Upper Left Y  : {uly}')\n",
+    "print(f'Lower Right X : {lrx}')\n",
+    "print(f'Lower Right Y : {lry}')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Store your ROI into a GeoDataFrame"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>geometry</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>POLYGON ((627263.700 5590485.200, 637115.000 5...</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                                            geometry\n",
+       "0  POLYGON ((627263.700 5590485.200, 637115.000 5..."
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "ROI CRS : EPSG:32631\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Create a list with the longitude coordinates (x)\n",
+    "lon_point_list = [ulx, lrx, lrx, ulx, ulx]\n",
+    "\n",
+    "# Create a list with the latitude coordinates (y)\n",
+    "lat_point_list = [uly, uly, lry, lry, uly]\n",
+    "\n",
+    "# Create a polygon object from the two list (lon and lat)\n",
+    "polygon_geom = Polygon(zip(lon_point_list, lat_point_list))\n",
+    "\n",
+    "# Create a GeoDataFrame with the polygon object\n",
+    "gdf = gpd.GeoDataFrame(index=[0], crs=crs_src, geometry=[polygon_geom])       \n",
+    "\n",
+    "# Reproject the GeoDataFrame to the destination CRS (needed only if you set your coordinates in WGS 84)\n",
+    "gdf = gdf.to_crs(crs_dst)\n",
+    "\n",
+    "display(gdf)\n",
+    "\n",
+    "# Check CRS of your polygon\n",
+    "print(f'ROI CRS : {gdf.crs}')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Add a name"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>geometry</th>\n",
+       "      <th>name</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>POLYGON ((627263.700 5590485.200, 637115.000 5...</td>\n",
+       "      <td>ROI_wallonia</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                                            geometry          name\n",
+       "0  POLYGON ((627263.700 5590485.200, 637115.000 5...  ROI_wallonia"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "gdf['name'] = 'ROI_wallonia'\n",
+    "\n",
+    "display(gdf)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Plot your ROI\n",
+    "\n",
+    "Is it a nice rectangular polygon?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "image/png": "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",
+      "text/plain": [
+       "<Figure size 432x288 with 1 Axes>"
+      ]
+     },
+     "metadata": {
+      "needs_background": "light"
+     },
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "fig, ax = plt.subplots(1, 1)\n",
+    "\n",
+    "gdf.boundary.plot(ax=ax)\n",
+    "\n",
+    "plt.box(False)\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Write GeoDataFrame in a shapefile if not exists"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The ROI vector file already exists --> delete it or change the variable \"roi_name\" if you want to create a new one\n"
+     ]
+    }
+   ],
+   "source": [
+    "if not os.path.isfile(roi_file):\n",
+    "    gdf.to_file(filename=roi_file, driver='ESRI Shapefile')\n",
+    "    print(f'A new vector file is created : {roi_file}')\n",
+    "\n",
+    "else:\n",
+    "    print('The ROI vector file already exists --> delete it or change the variable \"roi_name\" if you want to create a new one')"
+   ]
+  }
+ ],
+ "metadata": {
+  "interpreter": {
+   "hash": "31f2aee4e71d21fbe5cf8b01ff0e069b9275f58929596ceb00d14d90e3e16cd6"
+  },
+  "kernelspec": {
+   "display_name": "Python 3.6.12 64-bit",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.6.12"
+  },
+  "orig_nbformat": 2
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
